@@ -9,7 +9,7 @@ Tasmota works on WiFi and not on the low range Bluetooth and can be used on Smar
 You get the feature to exchange MQTT messages and hence to provide additional monitoring functions.  
 Caveat: devices based on the ESP8266 (quite all commercial devices) cannot encrypt communication.  
 That is a very serious security flaw, if you use an external MQTT server.   
-It is really very easy to hijack your device and turn it into a malware relay !  
+It is really very easy to hijack your device and turn it into a malware bot !  
 Inside your WLAN you are safe, but ***never*** use it with external addresses !.  
 ## Project Goals:
 Being able to remotely monitor Tasmota devices using safe Thinger.io communication.
