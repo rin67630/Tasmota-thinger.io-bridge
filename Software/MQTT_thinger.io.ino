@@ -24,7 +24,7 @@
 #include <ArduinoJson.h>
 
 
-ThingerESP8266 thing(CLOUD_USERNAME, BRIDGE_NAME, DEVICE_CREDENTIALS);
+ThingerESP8266 thing(CLOUD_USERNAME, DEVICE_NAME, DEVICE_CREDENTIALS);
 PicoMQTT::Server mqtt;
 
 static IPAddress ip;
@@ -99,8 +99,8 @@ struct Device4 {
 } Device4;
 
 void getWIFI() {
-  WiFi.hostname(BRIDGE_NAME);
-  Serial.printf("\n\n\n\nTry WiFi %s as %s", WIFI_SSID, BRIDGE_NAME);
+  WiFi.hostname(DEVICE_NAME);
+  Serial.printf("\n\n\n\nTry WiFi %s as %s", WIFI_SSID, DEVICE_NAME);
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) { delay(1000); }
@@ -110,7 +110,7 @@ void getWIFI() {
 }
 
 void setup() {
-  WiFi.hostname(BRIDGE_NAME);
+  WiFi.hostname(DEVICE_NAME);
   // Setup serial
   Serial.begin(9600);
   delay(1000);
