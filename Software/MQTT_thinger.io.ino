@@ -19,11 +19,9 @@
 #define DST_OFF "DST_OFF "  // Summer Offset in secs (exactly 8  chars incl spaces)
 #define LONGTD "LONGTD  "   // Longitude             (exactly 8  chars incl spaces)
 #define LATITD "LATITD  "   // Latitude              (exactly 8  chars incl spaces)
-#endif
-
-
 // ***Weather server***
-#define OPEN_WEATHER_MAP_APP_ID "5ec9d1e276925c3a4e68475d1a51a6ec"
+#define OPEN_WEATHER_MAP_APP_ID "GetYourId at OpenWeatherMaps.org"
+#endif
 
 //Bucket Names (change for pay accounts only)
 #define BUCKET_EVENT "EVENT"
