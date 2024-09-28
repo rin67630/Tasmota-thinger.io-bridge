@@ -1,5 +1,10 @@
-// Placeholder credentials to be used with Python Patcher.
-
+/* Tasmota-thinger.io-bridge by Laszlo Lebrun https://github.com/rin67630/Tasmota-thinger.io-bridge
+   An open source solution for ESP8266 devices to bridge Tasmota devices to Thinger.io, providing dashboards and other nice benefits.
+   License: GNU GPLV3.0  CC-SA-BY
+*/
+//----------------
+// Placeholder credentials to be used with Python Patcher https://github.com/rin67630/ESP_Binary_patcher
+// you may compile as is and patch later or change the credentials to upload from the compiler.
 #define DEVICE_NAME             "DEVCNAME        " 
 #define WIFI_SSID               "WIFISSID        "
 #define WIFI_PASS               "WIFIPASS                "
@@ -10,11 +15,17 @@
 #define LONGTD                  "LONGTD  "        // Longitude             (exactly 8  chars incl spaces)
 #define LATITD                  "LATITD  "        // Latitude              (exactly 8  chars incl spaces)
 
+// ***Weather server***
+#define OPEN_WEATHER_MAP_APP_ID "5ec9d1e276925c3a4e68475d1a51a6ec"
+
 //Bucket Names (for pay accounts only)
 #define BUCKET_EVENT "EVENT"
-#define BUCKET_MIN "MIN"
+#define BUCKET_MIN "MINUTE"
 #define BUCKET_HOUR "HOUR"
 #define BUCKET_DAY "DAY"
+
+#define DEV5_IS_SUM_1234
+#define DEV5_IS_SUM_123_MINUS4
 
 #define DEFAULT_FREQUENCY 50
 
@@ -22,13 +33,26 @@
 #include <ThingerESP8266.h>
 #include <PicoMQTT.h>
 #include <ArduinoJson.h>
+#include <ESP8266HTTPClient.h>
+#include <ArduinoOTA.h>
+#include "time.h"  // built-in
+#include "TZ.h"
 
 
+// Macro to run things periodically
+#define runEvery(t) for (static uint16_t _lasttime; \
+                         (uint16_t)((uint16_t)millis() - _lasttime) >= (t); \
+                         _lasttime += (t))
+
+// Instanciations
 ThingerESP8266 thing(CLOUD_USERNAME, DEVICE_NAME, DEVICE_CREDENTIALS);
 PicoMQTT::Server mqtt;
+HTTPClient http;
+WiFiClient wifiClient;
 
 static IPAddress ip;
 static char charbuff[120];
+String JSONpayload;
 
 struct Device1 {
   float Total;
@@ -42,10 +66,6 @@ struct Device1 {
   float Voltage;
   float Current;
   float Temperature;
-  float Humidity;
-  float Pressure;
-  float Windspeed;
-  float Winddirection;
 } Device1;
 
 struct Device2 {
@@ -60,10 +80,6 @@ struct Device2 {
   float Voltage;
   float Current;
   float Temperature;
-  float Humidity;
-  float Pressure;
-  float Windspeed;
-  float Winddirection;
 } Device2;
 
 struct Device3 {
@@ -78,10 +94,6 @@ struct Device3 {
   float Voltage;
   float Current;
   float Temperature;
-  float Humidity;
-  float Pressure;
-  float Windspeed;
-  float Winddirection;
 } Device3;
 
 struct Device4 {
@@ -96,11 +108,37 @@ struct Device4 {
   float Voltage;
   float Current;
   float Temperature;
-  float Humidity;
-  float Pressure;
-  float Windspeed;
-  float Winddirection;
 } Device4;
+
+struct Device5 {
+  float Total;
+  float Yesterday;
+  float Today;
+  float Power;
+  float Apparent;
+  float Reactive;
+  float Factor;
+  float Frequency = DEFAULT_FREQUENCY;
+  float Voltage;
+  float Current;
+  float Temperature;
+} Device5;
+
+// ***Weather***
+float temperature;
+float humidity;
+float pressure;
+float wind_speed;
+int wind_direction;
+int cloudiness;
+String weather_summary;
+
+// Room climate***
+float roomTemperature;
+float roomHumidity;
+float roomPressure;
+
+String openWeatherMapsURL = String("http://api.openweathermap.org/data/2.5/weather?units=metric&appid=") + OPEN_WEATHER_MAP_APP_ID + String("&lat=") + LATITD + String("&lon=") + LONGTD;
 
 void getWIFI() {
   WiFi.hostname(DEVICE_NAME);
@@ -111,21 +149,84 @@ void getWIFI() {
   Serial.print("\nWiFi connected to: ");
   ip = WiFi.localIP();
   Serial.println(ip);
-}
+}  // end getWIFI
+
+void getWeather() {
+  http.begin(wifiClient, openWeatherMapsURL);
+  int httpCode2 = http.GET();
+  if (httpCode2 == HTTP_CODE_OK) {
+    JSONpayload = http.getString();
+    JsonDocument doc;
+    auto error = deserializeJson(doc, JSONpayload.c_str());
+    if (not error) {
+      temperature = doc["main"]["temp"];
+      pressure = doc["main"]["pressure"];
+      humidity = doc["main"]["humidity"];
+      wind_speed = doc["wind"]["speed"];
+      wind_direction = doc["wind"]["deg"];
+      cloudiness = doc["clouds"]["all"];  // % Clouds
+      const char* w = doc["weather"][0]["description"];
+      weather_summary = w;
+    }
+  }
+  http.end();
+}  // end getWeather
+
+
+void initOTA() {
+  if (WiFi.status() == WL_CONNECTED) {
+    // Over the Air Framework
+    ArduinoOTA.onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH) {
+        type = "sketch";
+      } else {  // U_FS
+        type = "filesystem";
+      }
+      // NOTE: if updating FS this would be the place to unmount FS using FS.end()
+      Serial.println("Start updating " + type);
+    });
+    ArduinoOTA.onEnd([]() {
+      Serial.println("\nEnd");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) {
+        Serial.printf("Auth Failed\n");
+      } else if (error == OTA_BEGIN_ERROR) {
+        Serial.printf("Begin Failed\n");
+      } else if (error == OTA_CONNECT_ERROR) {
+        Serial.printf("Connect Failed\n");
+      } else if (error == OTA_RECEIVE_ERROR) {
+        Serial.printf("Receive Failed\n");
+      } else if (error == OTA_END_ERROR) {
+        Serial.printf("End Failed\n");
+      }
+    });
+    ArduinoOTA.setHostname(DEVICE_NAME);
+    ArduinoOTA.begin();
+  }
+}  //end initOTA
+
 
 void setup() {
   WiFi.hostname(DEVICE_NAME);
   // Setup serial
   Serial.begin(9600);
+  Serial.flush();
   delay(1000);
 
   // Connect to WiFi
   getWIFI();
   delay(2000);
+  mqtt.begin();
+
 
   // Subscribe to a topic and attach a callback
-  mqtt.subscribe("#", [](const char* topic, const char* message) 
-  {
+  mqtt.subscribe("#", [](const char* topic, const char* message) {
     if (String(topic) == "tele/thinger1/SENSOR") {
       Serial.print(topic);
       Serial.println(message);
@@ -143,10 +244,6 @@ void setup() {
         Device1.Voltage = doc["ENERGY"]["Voltage"];
         Device1.Current = doc["ENERGY"]["Current"];
         Device1.Temperature = doc["ANALOG"]["Temperature"];
-        Device1.Humidity = doc["ANALOG"]["Humidity"];
-        Device1.Pressure = doc["ANALOG"]["Pressure"];
-        Device1.Windspeed = doc["ANALOG"]["Windspeed"];
-        Device1.Winddirection = doc["ANALOG"]["Winddirection"];
       }
     }
     if (String(topic) == "tele/thinger2/SENSOR") {
@@ -161,15 +258,11 @@ void setup() {
         Device2.Today = doc["ENERGY"]["Today"];
         Device2.Power = doc["ENERGY"]["Power"];
         Device2.Apparent = doc["ENERGY"]["ApparentPower"];
-        Device2.Reactive = doc["ENERGY"]["Reactive Power"];
+        Device2.Reactive = doc["ENERGY"]["ReactivePower"];
         Device2.Factor = doc["ENERGY"]["Factor"];
         Device2.Voltage = doc["ENERGY"]["Voltage"];
         Device2.Current = doc["ENERGY"]["Current"];
         Device2.Temperature = doc["ENERGY"]["Temperature"];
-        Device2.Humidity = doc["ANALOG"]["Humidity"];
-        Device2.Pressure = doc["ANALOG"]["Pressure"];
-        Device2.Windspeed = doc["ANALOG"]["Windspeed"];
-        Device2.Winddirection = doc["ANALOG"]["Winddirection"];        
       }
     }
     if (String(topic) == "tele/thinger3/SENSOR") {
@@ -184,15 +277,11 @@ void setup() {
         Device3.Today = doc["ENERGY"]["Today"];
         Device3.Power = doc["ENERGY"]["Power"];
         Device3.Apparent = doc["ENERGY"]["ApparentPower"];
-        Device3.Reactive = doc["ENERGY"]["Reactive Power"];
+        Device3.Reactive = doc["ENERGY"]["ReactivePower"];
         Device3.Factor = doc["ENERGY"]["Factor"];
         Device3.Voltage = doc["ENERGY"]["Voltage"];
         Device3.Current = doc["ENERGY"]["Current"];
         Device3.Temperature = doc["ANALOG"]["Temperature"];
-        Device3.Humidity = doc["ANALOG"]["Humidity"];
-        Device3.Pressure = doc["ANALOG"]["Pressure"];
-        Device3.Windspeed = doc["ANALOG"]["Windspeed"];
-        Device3.Winddirection = doc["ANALOG"]["Winddirection"];        
       }
     }
     if (String(topic) == "tele/thinger4/SENSOR") {
@@ -207,26 +296,19 @@ void setup() {
         Device4.Today = doc["ENERGY"]["Today"];
         Device4.Power = doc["ENERGY"]["Power"];
         Device4.Apparent = doc["ENERGY"]["ApparentPower"];
-        Device4.Reactive = doc["ENERGY"]["Reactive Power"];
+        Device4.Reactive = doc["ENERGY"]["ReactivePower"];
         Device4.Factor = doc["ENERGY"]["Factor"];
         Device4.Voltage = doc["ENERGY"]["Voltage"];
         Device4.Current = doc["ENERGY"]["Current"];
         Device4.Temperature = doc["ANALOG"]["Temperature"];
-        Device4.Humidity = doc["ANALOG"]["Humidity"];
-        Device4.Pressure = doc["ANALOG"]["Pressure"];
-        Device4.Windspeed = doc["ANALOG"]["Windspeed"];
-        Device4.Winddirection = doc["ANALOG"]["Winddirection"];        
       }
     }
   });
-
-  mqtt.begin();
-
-  thing["measure"] >> [](pson& out) 
-  {
+ 
+  thing["measure"] >> [](pson& out) {
     out["Voltage1"] = Device1.Voltage;
     out["Current1"] = Device1.Current;
-    out["Frequency1"] = Device1.frequency;
+    out["Frequency1"] = Device1.Frequency;
     out["MeasPower1"] = Device1.Power;
     out["ReaPower1"] = Device1.Reactive;
     out["AppPower1"] = Device1.Apparent;
@@ -235,14 +317,10 @@ void setup() {
     out["Total1"] = Device1.Total;
     out["Factor1"] = Device1.Factor;
     out["Temperature1"] = Device1.Temperature;
-    out["Humidity1"] = Device1.Humidity;
-    out["Pressure1"] = Device1.Pressure;
-    out["Windspeed1"] = Device1.Windspeed;
-    out["Winddirection1"] = Device1.Winddirection;
 
     out["Voltage2"] = Device2.Voltage;
     out["Current2"] = Device2.Current;
-    out["Frequency2"] = Device2.frequency;
+    out["Frequency2"] = Device2.Frequency;
     out["MeasPower2"] = Device2.Power;
     out["ReaPower2"] = Device2.Reactive;
     out["AppPower2"] = Device2.Apparent;
@@ -251,14 +329,10 @@ void setup() {
     out["Total2"] = Device2.Total;
     out["Factor2"] = Device2.Factor;
     out["Temperature2"] = Device2.Temperature;
-    out["Humidity2"] = Device2.Humidity;
-    out["Pressure2"] = Device2.Pressure;
-    out["Windspeed2"] = Device2.Windspeed;
-    out["Winddirection2"] = Device2.Winddirection;
 
     out["Voltage3"] = Device3.Voltage;
     out["Current3"] = Device3.Current;
-    out["Frequency3"] = Device3.frequency;
+    out["Frequency3"] = Device3.Frequency;
     out["MeasPower3"] = Device3.Power;
     out["ReaPower3"] = Device3.Reactive;
     out["AppPower3"] = Device3.Apparent;
@@ -267,14 +341,10 @@ void setup() {
     out["Total3"] = Device3.Total;
     out["Factor3"] = Device3.Factor;
     out["Temperature3"] = Device3.Temperature;
-    out["Humidity3"] = Device3.Humidity;
-    out["Pressure3"] = Device3.Pressure;
-    out["Windspeed3"] = Device3.Windspeed;
-    out["Winddirection3"] = Device3.Winddirection;    
-    
+
     out["Voltage4"] = Device4.Voltage;
     out["Current4"] = Device4.Current;
-    out["Frequency4"] = Device4.frequency;
+    out["Frequency4"] = Device4.Frequency;
     out["MeasPower4"] = Device4.Power;
     out["ReaPower4"] = Device4.Reactive;
     out["AppPower4"] = Device4.Apparent;
@@ -283,14 +353,48 @@ void setup() {
     out["Total4"] = Device4.Total;
     out["Factor4"] = Device4.Factor;
     out["Temperature4"] = Device4.Temperature;
-    out["Humidity4"] = Device4.Humidity;
-    out["Pressure4"] = Device4.Pressure;
-    out["Windspeed4"] = Device4.Windspeed;
-    out["Winddirection4"] = Device4.Winddirection;    
+
+    out["Voltage5"] = Device5.Voltage;
+    out["Current5"] = Device5.Current;
+    out["Frequency5"] = Device5.Frequency;
+    out["MeasPower5"] = Device5.Power;
+    out["ReaPower5"] = Device5.Reactive;
+    out["AppPower5"] = Device5.Apparent;
+    out["Yesterday5"] = Device5.Yesterday;
+    out["Today5"] = Device5.Today;
+    out["Total5"] = Device5.Total;
+    out["Factor5"] = Device5.Factor;
+    out["Temperature5"] = Device5.Temperature;
+
+    out["temperature"] = temperature;
+    out["humidity"] = humidity;
+    out["pressure"] = pressure;
+    out["wind"] = wind_speed;
+    out["direction"] = wind_direction;
+    out["summary"] = weather_summary;
   };
-}
+
+  pson whoami;  //Setting IP and Version reminder property on thinger
+  whoami["IP"]   = WiFi.localIP().toString();
+  whoami["MAC"]  = WiFi.macAddress();
+  whoami["HOST"] = WiFi.hostname();
+  whoami["Soft"] = __FILE__;
+  whoami["Date"] = __DATE__;
+  whoami["Time"] = __TIME__;
+  // whoami["WURL"] = openWeatherMapsURL;
+  thing.set_property("whoami", whoami, true);
+
+  getWeather();  // Get initial Weather data
+  initOTA();
+  Serial.print("Start OTA, ");
+  ArduinoOTA.begin();
+  delay(500);
+}  //end setup
 
 void loop() {
   mqtt.loop();
   thing.handle();
+  ArduinoOTA.handle();
+  runEvery(1000000) {getWeather();}                            // Get Weather data every ~18 minutes
+  runEvery(60000) {thing.write_bucket(BUCKET_MIN, "measure");}  // Write minutely bucket data.
 }
