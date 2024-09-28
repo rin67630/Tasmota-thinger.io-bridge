@@ -16,8 +16,8 @@ Being able to remotely monitor Tasmota devices using safe Thinger.io communicati
 This project uses an ESP8266 as a bridge to thinger.io to log values, provide gorgeous dashboards and much more
 In a previous project, I used MQTT to Thinger unencrypted, which worked, but was inherently unsafe. ***Don’t do that !***
 ## Hardware Used: 
-•	ESP8266 Wemos D1 Mini or similar  ($4)
-•	Up to 4 Tasmota devices e.g. Refind P11, Sonoff, Shelly…
+-	ESP8266 Wemos D1 Mini or similar  ($4)
+-	Up to 4 Tasmota devices e.g. Refind P11, Sonoff, Shelly…
 - meta-device 5 as sum of the four real devices, or sum of the 3 first devices minus the 4th one.
 - meta device gathering weather conditions from the internet
 •	A wider choice of Tasmota sensors to come…
