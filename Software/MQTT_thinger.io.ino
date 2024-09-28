@@ -5,30 +5,41 @@
 //----------------
 // Placeholder credentials to be used with Python Patcher https://github.com/rin67630/ESP_Binary_patcher
 // you may compile as is and patch later or change the credentials to upload from the compiler.
-#define DEVICE_NAME             "DEVCNAME        " 
-#define WIFI_SSID               "WIFISSID        "
-#define WIFI_PASS               "WIFIPASS                "
-#define CLOUD_USERNAME          "CLOUDNAM        "
-#define DEVICE_CREDENTIALS      "DEVCCRED        "
-#define TZ_OFF                  "TZ_OFF  "        // Offset to GMT in secs (exactly 8  chars incl spaces)
-#define DST_OFF                 "DST_OFF "        // Summer Offset in secs (exactly 8  chars incl spaces)
-#define LONGTD                  "LONGTD  "        // Longitude             (exactly 8  chars incl spaces)
-#define LATITD                  "LATITD  "        // Latitude              (exactly 8  chars incl spaces)
+
+
+#if __has_include("Credentials.h")
+#include "Credentials.h"
+#else  // Placeholders credentials to be used with https://github.com/rin67630/ESP_Binary_patcher
+#define DEVICE_NAME "DEVCNAME        "
+#define WIFI_SSID "WIFISSID        "
+#define WIFI_PASS "WIFIPASS                "
+#define CLOUD_USERNAME "CLOUDNAM        "
+#define DEVICE_CREDENTIALS "DEVCCRED        "
+#define TZ_OFF "TZ_OFF  "   // Offset to GMT in secs (exactly 8  chars incl spaces)
+#define DST_OFF "DST_OFF "  // Summer Offset in secs (exactly 8  chars incl spaces)
+#define LONGTD "LONGTD  "   // Longitude             (exactly 8  chars incl spaces)
+#define LATITD "LATITD  "   // Latitude              (exactly 8  chars incl spaces)
+#endif
+
 
 // ***Weather server***
 #define OPEN_WEATHER_MAP_APP_ID "5ec9d1e276925c3a4e68475d1a51a6ec"
 
-//Bucket Names (for pay accounts only)
+//Bucket Names (change for pay accounts only)
 #define BUCKET_EVENT "EVENT"
 #define BUCKET_MIN "MINUTE"
 #define BUCKET_HOUR "HOUR"
 #define BUCKET_DAY "DAY"
 
-#define DEV5_IS_SUM_1234
-#define DEV5_IS_SUM_123_MINUS4
+// Data provisonning
+#define DEV1_IS_MQTT      //_IS_UDP, IS_MQTT  (UDP == Data from another RIN67630 device from the RIN67630's ecosystem)
+#define DEV2_IS_MQTT      //_IS_UDP, IS_MQTT  (MQTT == Data from Tasmota devices or MQTT clients with Tasmota-like message formats)
+#define DEV3_IS_MQTT      //_IS_UDP, IS_MQTT
+#define DEV4_IS_MQTT      //_IS_UDP, IS_MQTT
+#define DEV5_IS_SUM_1234  //_IS_SUM_123_MINUS4, _IS_SUM_1234 (How to compute Metadevice5)
+#define DEFAULT_FREQUENCY 50  //for AC devices without frequency measurment
 
-#define DEFAULT_FREQUENCY 50
-
+//includes
 #include <ESP8266WiFi.h>
 #include <ThingerESP8266.h>
 #include <PicoMQTT.h>
@@ -66,6 +77,7 @@ struct Device1 {
   float Voltage;
   float Current;
   float Temperature;
+  float Pressure;
 } Device1;
 
 struct Device2 {
@@ -80,6 +92,9 @@ struct Device2 {
   float Voltage;
   float Current;
   float Temperature;
+  float Humidity;
+  float Pressure;
+  byte Dummy;  // Dummy byte to change structure sizeof()
 } Device2;
 
 struct Device3 {
@@ -94,6 +109,9 @@ struct Device3 {
   float Voltage;
   float Current;
   float Temperature;
+  float Humidity;
+  float Pressure;
+  int Dummy;  // Dummy integer to change structure sizeof()
 } Device3;
 
 struct Device4 {
@@ -108,8 +126,12 @@ struct Device4 {
   float Voltage;
   float Current;
   float Temperature;
+  float Humidity;
+  float Pressure;
+  double Dummy;  // Dummy double to change structure sizeof()
 } Device4;
 
+// Device 5 is a meta device summarizing currents and powers, hence no other variables are included.
 struct Device5 {
   float Total;
   float Yesterday;
@@ -117,11 +139,7 @@ struct Device5 {
   float Power;
   float Apparent;
   float Reactive;
-  float Factor;
-  float Frequency = DEFAULT_FREQUENCY;
-  float Voltage;
   float Current;
-  float Temperature;
 } Device5;
 
 // ***Weather***
@@ -172,6 +190,24 @@ void getWeather() {
   http.end();
 }  // end getWeather
 
+void computeDevice5() {
+#ifdef DEV5_IS_SUM_1234
+  Device5.Total = Device1.Total + Device2.Total + Device3.Total + Device4.Total;
+  Device5.Yesterday = Device1.Yesterday + Device2.Yesterday + Device3.Yesterday + Device4.Yesterday;
+  Device5.Today = Device1.Today + Device2.Today + Device3.Today + Device4.Today;
+  Device5.Power = Device1.Power + Device1.Power + Device1.Power + Device1.Power;
+  Device1.Apparent = Device1.Power + Device2.Power + Device3.Power + Device4.Power;
+  Device1.Reactive = Device1.Reactive + Device2.Reactive + Device3.Reactive + Device4.Reactive;
+#endif
+#ifdef DEV5_IS_SUM_123_MINUS4
+  Device5.Total = Device1.Total + Device2.Total + Device3.Total - Device4.Total;
+  Device5.Yesterday = Device1.Yesterday + Device2.Yesterday + Device3.Yesterday - Device4.Yesterday;
+  Device5.Today = Device1.Today + Device2.Today + Device3.Today - Device4.Today;
+  Device5.Power = Device1.Power + Device1.Power + Device1.Power - Device1.Power;
+  Device1.Apparent = Device1.Power + Device2.Power + Device3.Power - Device4.Power;
+  Device1.Reactive = Device1.Reactive + Device21.Reactive + Device3.Reactive - Device4.Reactive;
+#endif
+}
 
 void initOTA() {
   if (WiFi.status() == WL_CONNECTED) {
@@ -213,7 +249,6 @@ void initOTA() {
 
 
 void setup() {
-  WiFi.hostname(DEVICE_NAME);
   // Setup serial
   Serial.begin(9600);
   Serial.flush();
@@ -304,7 +339,7 @@ void setup() {
       }
     }
   });
- 
+
   thing["measure"] >> [](pson& out) {
     out["Voltage1"] = Device1.Voltage;
     out["Current1"] = Device1.Current;
@@ -354,17 +389,13 @@ void setup() {
     out["Factor4"] = Device4.Factor;
     out["Temperature4"] = Device4.Temperature;
 
-    out["Voltage5"] = Device5.Voltage;
     out["Current5"] = Device5.Current;
-    out["Frequency5"] = Device5.Frequency;
     out["MeasPower5"] = Device5.Power;
     out["ReaPower5"] = Device5.Reactive;
     out["AppPower5"] = Device5.Apparent;
     out["Yesterday5"] = Device5.Yesterday;
     out["Today5"] = Device5.Today;
     out["Total5"] = Device5.Total;
-    out["Factor5"] = Device5.Factor;
-    out["Temperature5"] = Device5.Temperature;
 
     out["temperature"] = temperature;
     out["humidity"] = humidity;
@@ -375,8 +406,8 @@ void setup() {
   };
 
   pson whoami;  //Setting IP and Version reminder property on thinger
-  whoami["IP"]   = WiFi.localIP().toString();
-  whoami["MAC"]  = WiFi.macAddress();
+  whoami["IP"] = WiFi.localIP().toString();
+  whoami["MAC"] = WiFi.macAddress();
   whoami["HOST"] = WiFi.hostname();
   whoami["Soft"] = __FILE__;
   whoami["Date"] = __DATE__;
@@ -395,6 +426,13 @@ void loop() {
   mqtt.loop();
   thing.handle();
   ArduinoOTA.handle();
-  runEvery(1000000) {getWeather();}                            // Get Weather data every ~18 minutes
-  runEvery(60000) {thing.write_bucket(BUCKET_MIN, "measure");}  // Write minutely bucket data.
+  runEvery(10000) {
+    computeDevice5();
+  }  // Compute values for meta-device 5
+  runEvery(1000000) {
+    getWeather();
+  }  // Get Weather data every ~18 minutes
+  runEvery(60000) {
+    thing.write_bucket(BUCKET_MIN, "measure");
+  }  // Write minutely bucket data.
 }
