@@ -12,12 +12,14 @@ That is a very serious security flaw, if you use an external MQTT server.
 It is really very easy to hijack your device and turn it into a malware bot !  
 Inside your WLAN you are safe, but ***never*** use it with external addresses !.  
 ## Project Goals:
-Being able to remotely monitor Tasmota devices using safe Thinger.io communication.
+Being able to remotely monitor Tasmota devices using safe Thinger.io communication. 
 This project uses an ESP8266 as a bridge to thinger.io to log values, provide gorgeous dashboards and much more
 In a previous project, I used MQTT to Thinger unencrypted, which worked, but was inherently unsafe. ***Don’t do that !***
 ## Hardware Used: 
 •	ESP8266 Wemos D1 Mini or similar  ($4)
 •	Up to 4 Tasmota devices e.g. Refind P11, Sonoff, Shelly…
+- meta-device 5 as sum of the four real devices, or sum of the 3 first devices minus the 4th one.
+- meta device gathering weather conditions from the internet
 •	A wider choice of Tasmota sensors to come…
 
 ## Project progress
@@ -25,8 +27,6 @@ Currently the code provides support for 4 Refoss P11 smart plugs, which get inte
 
 It will rapidly evolve with following features:
 - add more Tasmota sensors: please give me the MQTT strings here: https://github.com/arendst/Tasmota/discussions/22204
-- add a software sub-device to get weather conditions
-- add a software sub device which is the sum of other subdevices
 - add relay outputs
 - add conditions to control the relays
 - ... 
