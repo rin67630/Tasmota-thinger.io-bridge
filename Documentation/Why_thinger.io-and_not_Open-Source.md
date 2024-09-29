@@ -15,7 +15,7 @@ Many IoT devices are sold with Tuya or other proprietary Internet-dashboards too
 Yes, but those dashboards are designed by the vendor, providing just enough to sell their devices.  
 With thinger.io you fully control your dashboards.  
 # What is behind that company, will they sell your data?
-Free? Where is the catch?
+Free? Where is the catch?  
 Of course, the owners of thinger.io want you to love it so much that you will go into a more powerful pay-subscription, which is the way to go for businesses and the way they finance their living.  
 But they will not nag you, as a tinkerer, if you don’t. They did not do in the past 3 years.  
 # What about the future?
