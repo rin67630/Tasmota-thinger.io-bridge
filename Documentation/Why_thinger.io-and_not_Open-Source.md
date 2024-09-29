@@ -13,8 +13,8 @@ For free, forever
 # What is behind that company, will they sell your data?
 Free? Where is the trap?
 Of course, the owners of thinger.io want you to love it so much that you will go into a more powerful pay-subscription, which is the way to go for businesses and the way they finance their living.  
-But they will not nag you, as a tinkerer, if you don’t. They did not do in the past 3 years.
+But they will not nag you, as a tinkerer, if you don’t. They did not do in the past 3 years.  
 # What about the future?
-They will not do it in future too... Of course, if they get bought by a financial shark, that may change or they may get bankrupt.
-True, as a lot of things in real life.  
-But let's be positive and just enjoy the free lunch, you have nothing to lose!
+They will not do it in future too... Of course, if they get bought by a financial shark, that may change or they may get bankrupt.  
+True, as a lot of things in real life.   
+But let's be positive and just enjoy the free lunch, you have nothing to lose!  
