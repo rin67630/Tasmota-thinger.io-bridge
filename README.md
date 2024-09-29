@@ -25,10 +25,14 @@ In a previous project, I used MQTT to Thinger unencrypted, which worked, but was
 
 
 ## Project progress
-Currently the code provides support for 4 Refoss P11 smart plugs, which get integrated into one thinger.io combo-device with 4 subdevices.
+Currently the code provides support for most Tasmota smart plugs (e.g. 4 Refoss P11), which get integrated into one thinger.io combo-device with 4 subdevices.
+I had tested a PZME-004 AC monitor with "tasmotized" ESP8266 too: it is 100 compatible with smart plugs too.
 
 It will rapidly evolve with following features:
 - add more Tasmota sensors: please give me the MQTT strings here: https://github.com/arendst/Tasmota/discussions/22204
 - add relay outputs
 - add conditions to control the relays
 - ... 
+
+## Why thinger.io and not Open-Source?
+Please read file Why thinger.io-and_not_Open-Source.md
