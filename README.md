@@ -35,4 +35,4 @@ It will rapidly evolve with following features:
 - ... 
 
 ## Why thinger.io and not Open-Source?
-Please read file Why thinger.io-and_not_Open-Source.md
+Please read file Why_thinger.io-and_not_Open-Source.md
