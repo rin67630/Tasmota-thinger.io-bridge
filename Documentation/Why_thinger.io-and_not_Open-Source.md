@@ -9,9 +9,13 @@ Thinger.io is also fast, values can be updated every second and even faster.
 You don’t need anything else: no computer, no MQTT broker, no database, nothing else than your devices and a browser.   
 Important for casual tinkerers: no subscription, no cost, no payment data to be disclosed!  
 You get up to two devices, 4 dashboards, 4 data buckets, 4 endpoints to send e.g. eMails …  
-For free, forever
+For free, forever !
+# What is the difference with e.g. Tuya?
+Many IoT devices are sold with Tuya or other proprietary Internet-dashboards too.  
+Yes, but those dashboards are designed by the vendor, providing just enough to sell their devices.  
+With thinger.io you fully control your dashboards.  
 # What is behind that company, will they sell your data?
-Free? Where is the trap?
+Free? Where is the catch?
 Of course, the owners of thinger.io want you to love it so much that you will go into a more powerful pay-subscription, which is the way to go for businesses and the way they finance their living.  
 But they will not nag you, as a tinkerer, if you don’t. They did not do in the past 3 years.  
 # What about the future?
