@@ -19,9 +19,12 @@
 #define DST_OFF "DST_OFF "  // Summer Offset in secs (exactly 8  chars incl spaces)
 #define LONGTD "LONGTD  "   // Longitude             (exactly 8  chars incl spaces)
 #define LATITD "LATITD  "   // Latitude              (exactly 8  chars incl spaces)
-// ***Weather server***
 #define OPEN_WEATHER_MAP_APP_ID "GetYourId at OpenWeatherMaps.org"
 #endif
+
+
+// ***Weather server***
+
 
 //Bucket Names (change for pay accounts only)
 #define BUCKET_EVENT "EVENT"
@@ -30,11 +33,11 @@
 #define BUCKET_DAY "DAY"
 
 // Data provisonning
-#define DEV1_IS_MQTT      //_IS_UDP, IS_MQTT  (UDP == Data from another RIN67630 device from the RIN67630's ecosystem)
-#define DEV2_IS_MQTT      //_IS_UDP, IS_MQTT  (MQTT == Data from Tasmota devices or MQTT clients with Tasmota-like message formats)
-#define DEV3_IS_MQTT      //_IS_UDP, IS_MQTT
-#define DEV4_IS_MQTT      //_IS_UDP, IS_MQTT
-#define DEV5_IS_SUM_1234  //_IS_SUM_123_MINUS4, _IS_SUM_1234 (How to compute Metadevice5)
+#define DEV1_IS_MQTT          //_IS_UDP, IS_MQTT  (UDP == Data from another RIN67630 device from the RIN67630's ecosystem)
+#define DEV2_IS_MQTT          //_IS_UDP, IS_MQTT  (MQTT == Data from Tasmota devices or MQTT clients with Tasmota-like message formats)
+#define DEV3_IS_MQTT          //_IS_UDP, IS_MQTT
+#define DEV4_IS_MQTT          //_IS_UDP, IS_MQTT
+#define DEV5_IS_SUM_1234      //_IS_SUM_123_MINUS4, _IS_SUM_1234 (How to compute Metadevice5)
 #define DEFAULT_FREQUENCY 50  //for AC devices without frequency measurment
 
 //includes
@@ -76,6 +79,8 @@ struct Device1 {
   float Current;
   float Temperature;
   float Pressure;
+  boolean RelayIn;
+  boolean RelayOut;
 } Device1;
 
 struct Device2 {
@@ -92,6 +97,8 @@ struct Device2 {
   float Temperature;
   float Humidity;
   float Pressure;
+  boolean RelayIn;
+  boolean RelayOut;
   byte Dummy;  // Dummy byte to change structure sizeof()
 } Device2;
 
@@ -109,6 +116,8 @@ struct Device3 {
   float Temperature;
   float Humidity;
   float Pressure;
+  boolean RelayIn;
+  boolean RelayOut;
   int Dummy;  // Dummy integer to change structure sizeof()
 } Device3;
 
@@ -126,6 +135,8 @@ struct Device4 {
   float Temperature;
   float Humidity;
   float Pressure;
+  boolean RelayIn;
+  boolean RelayOut;
   double Dummy;  // Dummy double to change structure sizeof()
 } Device4;
 
@@ -140,6 +151,12 @@ struct Device5 {
   float Current;
 } Device5;
 
+// Room climate***
+float roomTemperature;
+float roomHumidity;
+float roomPressure;
+
+
 // ***Weather***
 float temperature;
 float humidity;
@@ -148,12 +165,6 @@ float wind_speed;
 int wind_direction;
 int cloudiness;
 String weather_summary;
-
-// Room climate***
-float roomTemperature;
-float roomHumidity;
-float roomPressure;
-
 String openWeatherMapsURL = String("http://api.openweathermap.org/data/2.5/weather?units=metric&appid=") + OPEN_WEATHER_MAP_APP_ID + String("&lat=") + LATITD + String("&lon=") + LONGTD;
 
 void getWIFI() {
@@ -193,7 +204,7 @@ void computeDevice5() {
   Device5.Total = Device1.Total + Device2.Total + Device3.Total + Device4.Total;
   Device5.Yesterday = Device1.Yesterday + Device2.Yesterday + Device3.Yesterday + Device4.Yesterday;
   Device5.Today = Device1.Today + Device2.Today + Device3.Today + Device4.Today;
-  Device5.Power = Device1.Power + Device1.Power + Device1.Power + Device1.Power;
+  Device5.Power = Device1.Power + Device2.Power + Device3.Power + Device4.Power;
   Device1.Apparent = Device1.Power + Device2.Power + Device3.Power + Device4.Power;
   Device1.Reactive = Device1.Reactive + Device2.Reactive + Device3.Reactive + Device4.Reactive;
 #endif
@@ -201,7 +212,7 @@ void computeDevice5() {
   Device5.Total = Device1.Total + Device2.Total + Device3.Total - Device4.Total;
   Device5.Yesterday = Device1.Yesterday + Device2.Yesterday + Device3.Yesterday - Device4.Yesterday;
   Device5.Today = Device1.Today + Device2.Today + Device3.Today - Device4.Today;
-  Device5.Power = Device1.Power + Device1.Power + Device1.Power - Device1.Power;
+  Device5.Power = Device1.Power + Device2.Power + Device3.Power - Device4.Power;
   Device1.Apparent = Device1.Power + Device2.Power + Device3.Power - Device4.Power;
   Device1.Reactive = Device1.Reactive + Device21.Reactive + Device3.Reactive - Device4.Reactive;
 #endif
@@ -245,6 +256,10 @@ void initOTA() {
   }
 }  //end initOTA
 
+void togglePower() {
+  // testing blinking on the second device
+  mqtt.publish("cmnd/thinger2/Power2", "TOGGLE");
+}
 
 void setup() {
   // Setup serial
@@ -259,11 +274,10 @@ void setup() {
 
 
   // Subscribe to a topic and attach a callback
-  mqtt.subscribe("#", [](const char* topic, const char* message) {
+  mqtt.subscribe("tele/thinger#", [](const char* topic, const char* message) {
+    Serial.print(topic);
+    Serial.println(message);
     if (String(topic) == "tele/thinger1/SENSOR") {
-      Serial.print(topic);
-      Serial.println(message);
-
       JsonDocument doc;
       auto error = deserializeJson(doc, message);
       if (not error) {
@@ -280,9 +294,6 @@ void setup() {
       }
     }
     if (String(topic) == "tele/thinger2/SENSOR") {
-      Serial.print(topic);
-      Serial.println(message);
-
       JsonDocument doc;
       auto error = deserializeJson(doc, message);
       if (not error) {
@@ -299,9 +310,6 @@ void setup() {
       }
     }
     if (String(topic) == "tele/thinger3/SENSOR") {
-      Serial.print(topic);
-      Serial.println(message);
-
       JsonDocument doc;
       auto error = deserializeJson(doc, message);
       if (not error) {
@@ -318,9 +326,6 @@ void setup() {
       }
     }
     if (String(topic) == "tele/thinger4/SENSOR") {
-      Serial.print(topic);
-      Serial.println(message);
-
       JsonDocument doc;
       auto error = deserializeJson(doc, message);
       if (not error) {
@@ -337,6 +342,15 @@ void setup() {
       }
     }
   });
+
+  thing["toggleDevice2.2"] = []() {
+    mqtt.publish("cmnd/thinger2/Power2", "TOGGLE");
+  };
+
+  thing["toggleDevice1.1"] = []() {
+    mqtt.publish("cmnd/thinger1/Power1", "TOGGLE");
+  };
+
 
   thing["measure"] >> [](pson& out) {
     out["Voltage1"] = Device1.Voltage;
@@ -387,7 +401,6 @@ void setup() {
     out["Factor4"] = Device4.Factor;
     out["Temperature4"] = Device4.Temperature;
 
-    out["Current5"] = Device5.Current;
     out["MeasPower5"] = Device5.Power;
     out["ReaPower5"] = Device5.Reactive;
     out["AppPower5"] = Device5.Apparent;
@@ -418,6 +431,7 @@ void setup() {
   Serial.print("Start OTA, ");
   ArduinoOTA.begin();
   delay(500);
+
 }  //end setup
 
 void loop() {
@@ -433,4 +447,7 @@ void loop() {
   runEvery(60000) {
     thing.write_bucket(BUCKET_MIN, "measure");
   }  // Write minutely bucket data.
+  runEvery(3000) {
+    // togglePower();
+  }
 }
