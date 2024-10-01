@@ -4,7 +4,8 @@ You however need a lot of configuration and match the broker, the database and t
 Alternatively, you need a host provider if you want to use your dashboards over the Internet, struggle with opening ports and TLS cryptography, which, as explained, the ESP8266 devices cannot manage.
 Same, if you chose Home Assistant, locally fine, but if you want to access it from outside, you have to struggle with ports and IP addresses… Nothing really accessible to noobs.  
 # Thinger.io goes a much easier way.  
-Everything is integrated and the 1 to1 cryptography to remain safe is done by the IoT devices at a breeze. It works in a browser, worldwide and you configure the dashboards directly in-situ.  
+Everything is integrated and the proprietary cryptography to remain safe is easily done even by the weakests of the IoT devices. 
+Your dashboards configuration is done without any code, WYSIWYG in a browser, worldwide and you configure the dashboards directly in-situ.  
 Thinger.io is also fast, values can be updated every second and even faster.  
 You don’t need anything else: no computer, no MQTT broker, no database, nothing else than your devices and a browser.   
 Important for casual tinkerers: no subscription, no cost, no payment data to be disclosed!  
@@ -13,7 +14,7 @@ For free, forever !
 # What is the difference with e.g. Tuya?
 Many IoT devices are sold with Tuya or other proprietary Internet-dashboards too.  
 Yes, but those dashboards are designed by the vendor, providing just enough to sell their devices.  
-With thinger.io you fully control your dashboards and can do much, much more with your IoT data.  
+With thinger.io you fully control your dashboards and can do much, much more with your IoT data!  
 # What is behind that company, will they sell your data?
 Free? Where is the catch?  
 Of course, the owners of thinger.io want you to love it so much that you will go into a more powerful pay-subscription, which is the way to go for businesses and the way they finance their living.  
