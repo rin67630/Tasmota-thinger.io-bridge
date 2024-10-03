@@ -7,9 +7,10 @@ Same, if you chose Home Assistant, locally fine, but if you want to access it fr
 Everything is integrated and the proprietary cryptography to remain safe is easily done even by the weakests of the IoT devices. 
 Your dashboards configuration is done without any code, WYSIWYG in a browser, worldwide and you configure the dashboards directly in-situ.  
 Thinger.io is also fast, values can be updated every second and even faster.
-MQTT ist a very inefficient protocol. It's human readable protocol bloats the data transmission size. Thinger uses a data volume optimized format, dramatically reducing the amount of data exchanged. Moreover thinger.io can (beside the regular data push for recording historical data) use a data backcall paradigm: instead of having a device sending permanently data to a broker (even if nobody reads that data), using a data backcall transmits data only if someone reads it by viewing the dashboard.  
+MQTT ist a very inefficient protocol. It's human readable protocol bloats the data transmission size. Thinger uses a data volume optimized format, dramatically reducing the amount of data exchanged. Moreover thinger.io can (beside the regular data push for recording historical data) use a data backcall paradigm: instead of having a device sending permanently data to a broker (even if nobody reads that data), using a data backcall triggers targetted routines on the IOT device to compute and transmits data _only if someone reads it by viewing the dashboard_.  
 
-You don’t need anything else: no computer, no MQTT broker, no database, nothing else than your devices and a browser.  
+# No additional hardware needed
+To use thinger.io you don’t need anything else: no computer, no MQTT broker, no database, nothing else than your devices and a browser.  
 
 Important for casual tinkerers: no subscription, no cost, no payment data to be disclosed!  
 You get up to two devices, 4 dashboards, 4 data buckets, 4 endpoints to send e.g. eMails …  
