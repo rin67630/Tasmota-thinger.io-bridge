@@ -1,6 +1,7 @@
 # Tasmota-thinger.io-bridge
 Bridge to *safely* monitor Tasmota devices over the internet.   
-Here an example of what you get with a simple Tasmota smart plug, an esp8266 running Tasmota-thinger.io-Bridge and a free thinger.io account. Really nothing else !:  
+Here an example of what you get with 4 cheap Tasmota smart plugs, an esp8266 running Tasmota-thinger.io-Bridge and a free thinger.io account. 
+You really do need nothing else !:  
 ![image](https://github.com/user-attachments/assets/fc724880-1d73-455b-84a8-5b022e8778b1)
 
 
